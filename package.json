@@ -1,0 +1,9 @@
+{
+  "name": "drmiqbal02",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dr M Iqbal A Ghani — links landing page",
+  "scripts": {
+    "dev": "node server.js"
+  }
+}

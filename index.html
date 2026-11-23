@@ -14,177 +14,368 @@
 (function () {
   var t = null;
   try { t = localStorage.getItem('theme'); } catch (e) {}
-  if (t !== 'dark' && t !== 'light') t = 'dark';
+  if (t !== 'dark' && t !== 'light') {
+    t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
   document.documentElement.setAttribute('data-theme', t);
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
 <style>
-[data-theme="light"]{--bg:#F2F2F7;--card:#FFFFFF;--sep:rgba(60,60,67,0.16);--text:#1D1D1F;--title:#1D1D1F;--muted:#6E6E73;--label:#6E6E73;--tile:#1570B8;--tag:#1366A8;--chev:#B0B0B6;--hover:#F5F5F7;--glass:rgba(255,255,255,0.72);--glass-border:rgba(0,0,0,0.08);--focus:#1570B8;--shadow:0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04)}
-[data-theme="dark"]{--bg:#000000;--card:#1C1C1E;--sep:rgba(84,84,88,0.65);--text:#F5F5F7;--title:#F5F5F7;--muted:#98989D;--label:#8E8E93;--tile:#1E7FD0;--tag:#64B5F6;--chev:#5A5A5F;--hover:#2C2C2E;--glass:rgba(44,44,46,0.72);--glass-border:rgba(255,255,255,0.10);--focus:#64B5F6;--shadow:none}
-body{margin:0;background:var(--bg, #000000);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-a{color:var(--tag)}a:hover{color:var(--tag)}
-main{transition:background-color .25s ease, color .25s ease}
-.grp{transition:background-color .25s ease}
-.row{transition:background-color .15s ease;-webkit-tap-highlight-color:transparent}
-.grp.plain .row:hover{background:var(--hover)}
-.grp.accent .row:hover{background:rgba(255,255,255,0.08)}
-.row + .row .rt{box-shadow:inset 0 1px 0 var(--sep)}
-.grp.accent .row + .row .rt{box-shadow:inset 0 1px 0 rgba(255,255,255,0.22)}
-.row:active{opacity:.75}
-.row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px;border-radius:12px}
-.ib{-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);transition:transform .15s ease, color .15s ease;-webkit-tap-highlight-color:transparent;cursor:pointer}
-.ib:hover{color:var(--tag) !important}
-.ib:active{transform:scale(.94)}
-.ib:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
-[data-theme="light"] .i-sun{display:none}
-[data-theme="dark"] .i-moon{display:none}
-header p{text-wrap:balance}
+/* ============ Apple HIG tokens ============ */
+[data-theme="light"]{
+  --bg:#F2F2F7; --card:#FFFFFF; --sep:rgba(60,60,67,0.12);
+  --text:#1D1D1F; --title:#1D1D1F; --muted:#6E6E73; --label:#6E6E73;
+  --tile:#007AFF; --tag:#0066CC; --chev:#C7C7CC; --hover:#F5F5F7;
+  --glass:rgba(255,255,255,0.72); --glass-border:rgba(0,0,0,0.06);
+  --focus:#007AFF;
+  --shadow:0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.05);
+  --glow-op:0.5;
+  --toast-bg:rgba(29,29,31,0.92); --toast-text:#F5F5F7;
+  --chip-bg:rgba(255,255,255,0.72);
+}
+[data-theme="dark"]{
+  --bg:#000000; --card:#1C1C1E; --sep:rgba(84,84,88,0.45);
+  --text:#F5F5F7; --title:#F5F5F7; --muted:#98989D; --label:#8E8E93;
+  --tile:#0A84FF; --tag:#64A8FF; --chev:#5A5A5F; --hover:#2C2C2E;
+  --glass:rgba(44,44,46,0.6); --glass-border:rgba(255,255,255,0.1);
+  --focus:#64A8FF;
+  --shadow:0 1px 1px rgba(0,0,0,0.3), 0 8px 28px rgba(0,0,0,0.35);
+  --glow-op:0.32;
+  --toast-bg:rgba(245,245,247,0.94); --toast-text:#1D1D1F;
+  --chip-bg:rgba(44,44,46,0.6);
+}
+
+*{ -webkit-tap-highlight-color:transparent }
+html{ background:var(--bg) }
+body{
+  margin:0; background:var(--bg);
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  overflow-x:hidden;
+}
+a{ color:var(--tag) }
+main{ transition:background-color .3s ease, color .3s ease }
+
+/* ============ Ambient Siri-style glow ============ */
+.ambient{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.ambient i{
+  position:absolute; border-radius:50%;
+  filter:blur(90px); opacity:var(--glow-op);
+  will-change:transform;
+  transition:opacity .6s ease;
+}
+.ambient .a1{ width:46vmax; height:46vmax; left:-14vmax; top:-16vmax;
+  background:radial-gradient(circle at 40% 40%, #0A84FF 0%, transparent 65%);
+  animation:drift1 26s ease-in-out infinite alternate; }
+.ambient .a2{ width:40vmax; height:40vmax; right:-16vmax; top:24vh;
+  background:radial-gradient(circle at 55% 45%, #5E5CE6 0%, transparent 65%);
+  animation:drift2 32s ease-in-out infinite alternate; }
+.ambient .a3{ width:36vmax; height:36vmax; left:8vw; bottom:-18vmax;
+  background:radial-gradient(circle at 50% 50%, #30B0C7 0%, transparent 65%);
+  animation:drift3 38s ease-in-out infinite alternate; }
+@keyframes drift1{ from{ transform:translate(0,0) scale(1) } to{ transform:translate(9vmax,7vmax) scale(1.14) } }
+@keyframes drift2{ from{ transform:translate(0,0) scale(1.08) } to{ transform:translate(-8vmax,-6vmax) scale(0.94) } }
+@keyframes drift3{ from{ transform:translate(0,0) scale(0.96) } to{ transform:translate(7vmax,-8vmax) scale(1.12) } }
+[data-theme="light"] .ambient{ filter:saturate(.85) }
+
+/* ============ Entrance choreography ============ */
+[data-reveal]{ opacity:0; transform:translateY(22px) scale(.985); }
+body.ready [data-reveal]{
+  animation:rise .9s cubic-bezier(.22,1,.36,1) forwards;
+  animation-delay:var(--d, 0s);
+}
+@keyframes rise{ to{ opacity:1; transform:none } }
+
+/* ============ Top bar buttons ============ */
+.ib{
+  -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px);
+  transition:transform .35s cubic-bezier(.22,1,.36,1), color .2s ease, background-color .2s ease, border-color .2s ease;
+  cursor:pointer;
+}
+.ib:hover{ color:var(--tag) !important; transform:scale(1.08) }
+.ib:active{ transform:scale(.9) }
+.ib:focus-visible{ outline:2px solid var(--focus); outline-offset:3px }
+
+/* theme icon swap */
+.ib .ic{ position:absolute; transition:opacity .35s ease, transform .5s cubic-bezier(.22,1,.36,1) }
+[data-theme="light"] .i-sun{ opacity:0; transform:rotate(120deg) scale(.4) }
+[data-theme="dark"]  .i-moon{ opacity:0; transform:rotate(-120deg) scale(.4) }
+
+/* ============ Photo ============ */
+.photo-wrap{ position:relative; width:116px; height:116px; }
+.photo-wrap::before{
+  content:""; position:absolute; inset:-7px; border-radius:50%;
+  background:conic-gradient(from var(--spin,0deg), #0A84FF, #5E5CE6, #30B0C7, #64D2FF, #0A84FF);
+  opacity:.85; animation:spin 9s linear infinite;
+}
+.photo-wrap::after{
+  content:""; position:absolute; inset:-7px; border-radius:50%;
+  background:conic-gradient(from var(--spin,0deg), #0A84FF, #5E5CE6, #30B0C7, #64D2FF, #0A84FF);
+  filter:blur(16px); opacity:.55; animation:spin 9s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg) } }
+.photo{
+  position:relative; z-index:1; width:116px; height:116px; display:block;
+  border-radius:50%; object-fit:cover; border:3px solid var(--bg);
+  transition:transform .5s cubic-bezier(.22,1,.36,1);
+}
+.photo-wrap:hover .photo{ transform:scale(1.05) }
+
+/* ============ Status chip ============ */
+.chip{
+  display:inline-flex; align-items:center; gap:7px;
+  padding:6px 13px; border-radius:999px;
+  background:var(--chip-bg); border:1px solid var(--glass-border);
+  -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px);
+  font-size:12.5px; font-weight:500; letter-spacing:-0.005em; color:var(--muted);
+  font-variant-numeric:tabular-nums;
+}
+.chip .dot{
+  width:7px; height:7px; border-radius:50%; background:#30D158;
+  box-shadow:0 0 0 0 rgba(48,209,88,.5);
+  animation:pulse 2.2s ease-out infinite;
+}
+@keyframes pulse{
+  0%{ box-shadow:0 0 0 0 rgba(48,209,88,.45) }
+  70%{ box-shadow:0 0 0 8px rgba(48,209,88,0) }
+  100%{ box-shadow:0 0 0 0 rgba(48,209,88,0) }
+}
+
+/* ============ Grouped list cards ============ */
+.grp{
+  transition:background-color .3s ease, box-shadow .3s ease, transform .3s cubic-bezier(.22,1,.36,1);
+  transform-style:preserve-3d; will-change:transform;
+  position:relative;
+}
+@media (hover:hover) and (pointer:fine){
+  .grp::after{
+    content:""; position:absolute; inset:0; border-radius:inherit;
+    background:radial-gradient(320px circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.10), transparent 65%);
+    opacity:0; transition:opacity .35s ease; pointer-events:none;
+  }
+  [data-theme="light"] .grp.plain::after{
+    background:radial-gradient(320px circle at var(--mx,50%) var(--my,50%), rgba(0,122,255,0.07), transparent 65%);
+  }
+  .grp:hover::after{ opacity:1 }
+}
+.row{ transition:background-color .15s ease, transform .2s cubic-bezier(.22,1,.36,1); }
+.grp.plain .row:hover{ background:var(--hover) }
+.grp.accent .row:hover{ background:rgba(255,255,255,0.10) }
+.row + .row .rt{ box-shadow:inset 0 1px 0 var(--sep) }
+.grp.accent .row + .row .rt{ box-shadow:inset 0 1px 0 rgba(255,255,255,0.22) }
+.row:active{ transform:scale(.982); transition-duration:.08s }
+.row:active .tile{ transform:scale(.92) }
+.row:focus-visible{ outline:2px solid var(--focus); outline-offset:-2px; border-radius:12px }
+
+.tile{
+  transition:transform .3s cubic-bezier(.22,1,.36,1), background-color .3s ease;
+}
+.grp.plain .row:hover .tile{ transform:scale(1.08) rotate(-3deg) }
+.grp.plain .row:hover .chev{ transform:translateX(3px); color:var(--tag) }
+.chev{ transition:transform .25s cubic-bezier(.22,1,.36,1), color .25s ease }
+
+/* services accent card — Apple blue → indigo gradient */
+.grp.accent{
+  background:linear-gradient(135deg, #0A84FF 0%, #5E5CE6 100%) !important;
+  box-shadow:0 10px 32px rgba(10,132,255,0.35) !important;
+}
+[data-theme="light"] .grp.accent{
+  background:linear-gradient(135deg, #007AFF 0%, #5856D6 100%) !important;
+  box-shadow:0 10px 32px rgba(0,122,255,0.28) !important;
+}
+
+/* ============ Toast ============ */
+.toast{
+  position:fixed; left:50%; bottom:max(28px, env(safe-area-inset-bottom)); z-index:50;
+  transform:translate(-50%, 16px); opacity:0; pointer-events:none;
+  display:flex; align-items:center; gap:9px;
+  padding:11px 18px; border-radius:999px;
+  background:var(--toast-bg); color:var(--toast-text);
+  -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px);
+  font-size:14px; font-weight:500; letter-spacing:-0.01em;
+  box-shadow:0 8px 28px rgba(0,0,0,0.25);
+  transition:opacity .35s cubic-bezier(.22,1,.36,1), transform .35s cubic-bezier(.22,1,.36,1);
+}
+.toast.show{ opacity:1; transform:translate(-50%, 0) }
+
+header p{ text-wrap:balance }
+
 @media (max-width:480px){
-main{padding:max(40px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom)) !important}
-main > div{gap:28px !important}
-.photo{width:104px !important;height:104px !important}
-h1{font-size:28px !important}
-nav{gap:24px !important}
-.row{min-height:50px !important}
-.tg{top:max(12px, env(safe-area-inset-top)) !important;right:12px !important}
+  main{ padding:max(44px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom)) !important }
+  main > div{ gap:28px !important }
+  .photo-wrap, .photo{ width:104px !important; height:104px !important }
+  h1{ font-size:28px !important }
+  nav{ gap:24px !important }
+  .row{ min-height:50px !important }
+}
+
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important }
+  [data-reveal]{ opacity:1; transform:none }
+  .ambient{ display:none }
 }
 </style>
 </head>
 <body>
-<main style="position: relative; min-height: 100vh; box-sizing: border-box; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Helvetica Neue', Arial, sans-serif; display: flex; justify-content: center; padding: 72px 20px 48px">
-<button class="ib tg" type="button" id="theme-toggle" aria-label="Switch to light mode" style="position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; padding: 0; border-radius: 50%; border: 1px solid var(--glass-border); background: var(--glass); color: var(--text); display: flex; align-items: center; justify-content: center">
-<svg class="i-moon" aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg>
-<svg class="i-sun" aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
-</button>
-<div style="width: 100%; max-width: 28rem; display: flex; flex-direction: column; align-items: center; gap: 36px">
 
-<header style="display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center">
-<img class="photo" src="photo.jpg" alt="Dr M Iqbal A Ghani" width="116" height="116" style="width: 116px; height: 116px; display: block; border-radius: 50%; object-fit: cover; box-shadow: 0 10px 30px rgba(0,0,0,0.14)">
-<div style="display: flex; flex-direction: column; gap: 6px">
-<h1 style="margin: 0; font-size: 32px; line-height: 1.12; font-weight: 700; letter-spacing: -0.025em; color: var(--title)">Dr M Iqbal A Ghani</h1>
-<p style="margin: 0; font-size: 15px; line-height: 1.45; font-weight: 500; letter-spacing: -0.01em; color: var(--tag)">Life 2.0 | Untethered Soul | Time Traveller</p>
-<p style="margin: 0; font-size: 15px; line-height: 1.45; letter-spacing: -0.01em; color: var(--muted)">Doctor | Anesthesiologist | Pain Medicine Specialist</p>
-</div>
-<div style="display: flex; align-items: center; justify-content: center; gap: 12px">
-<a class="ib" href="mailto:miqbal.ag02@gmail.com" aria-label="Email miqbal.ag02@gmail.com" title="miqbal.ag02@gmail.com" style="width: 44px; height: 44px; box-sizing: border-box; text-decoration: none; border-radius: 50%; border: 1px solid var(--glass-border); background: var(--glass); color: var(--text); display: flex; align-items: center; justify-content: center">
-<svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"></rect><path d="M4 7l8 6 8-6"></path></svg>
-</a>
-<a class="ib" href="mailto:miqbal.ag02@moh.gov.my" aria-label="Email miqbal.ag02@moh.gov.my (Ministry of Health)" title="miqbal.ag02@moh.gov.my" style="width: 44px; height: 44px; box-sizing: border-box; text-decoration: none; border-radius: 50%; border: 1px solid var(--glass-border); background: var(--glass); color: var(--text); display: flex; align-items: center; justify-content: center">
-<svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 19H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v4"></path><path d="M4 7l8 6 8-6"></path><path d="M19 15v6M16 18h6"></path></svg>
-</a>
-</div>
+<div class="ambient" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+
+<main style="position:relative; z-index:1; min-height:100vh; box-sizing:border-box; background:transparent; color:var(--text); font-family:-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Helvetica Neue', Arial, sans-serif; display:flex; justify-content:center; padding:72px 20px 48px">
+
+<button class="ib" type="button" id="share-btn" aria-label="Share this page" style="position:absolute; top:20px; left:20px; width:44px; height:44px; padding:0; border-radius:50%; border:1px solid var(--glass-border); background:var(--glass); color:var(--text); display:flex; align-items:center; justify-content:center">
+  <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg>
+</button>
+
+<button class="ib" type="button" id="theme-toggle" aria-label="Switch to light mode" style="position:absolute; top:20px; right:20px; width:44px; height:44px; padding:0; border-radius:50%; border:1px solid var(--glass-border); background:var(--glass); color:var(--text); display:flex; align-items:center; justify-content:center">
+  <svg class="ic i-moon" aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg>
+  <svg class="ic i-sun" aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+</button>
+
+<div style="width:100%; max-width:28rem; display:flex; flex-direction:column; align-items:center; gap:36px">
+
+<header data-reveal style="--d:.05s; display:flex; flex-direction:column; align-items:center; gap:16px; text-align:center">
+  <div class="photo-wrap">
+    <img class="photo" src="photo.jpg" alt="Dr M Iqbal A Ghani" width="116" height="116">
+  </div>
+  <div style="display:flex; flex-direction:column; gap:6px; align-items:center">
+    <h1 style="margin:0; font-size:32px; line-height:1.12; font-weight:700; letter-spacing:-0.025em; color:var(--title)">Dr M Iqbal A Ghani</h1>
+    <p style="margin:0; font-size:15px; line-height:1.45; font-weight:500; letter-spacing:-0.01em; color:var(--tag)">Life 2.0 | Untethered Soul | Time Traveller</p>
+    <p style="margin:0; font-size:15px; line-height:1.45; letter-spacing:-0.01em; color:var(--muted)">Doctor | Anesthesiologist | Pain Medicine Specialist</p>
+  </div>
+  <span class="chip" id="clock-chip" title="Local time — Kuala Lumpur, Malaysia">
+    <span class="dot" aria-hidden="true"></span><span id="clock">Kuala Lumpur · --:--</span>
+  </span>
+  <div style="display:flex; align-items:center; justify-content:center; gap:12px">
+    <button class="ib copy-mail" type="button" data-mail="miqbal.ag02@gmail.com" aria-label="Copy email miqbal.ag02@gmail.com" title="Click to copy — miqbal.ag02@gmail.com" style="width:44px; height:44px; padding:0; border-radius:50%; border:1px solid var(--glass-border); background:var(--glass); color:var(--text); display:flex; align-items:center; justify-content:center">
+      <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"></rect><path d="M4 7l8 6 8-6"></path></svg>
+    </button>
+    <button class="ib copy-mail" type="button" data-mail="miqbal.ag02@moh.gov.my" aria-label="Copy email miqbal.ag02@moh.gov.my (Ministry of Health)" title="Click to copy — miqbal.ag02@moh.gov.my" style="width:44px; height:44px; padding:0; border-radius:50%; border:1px solid var(--glass-border); background:var(--glass); color:var(--text); display:flex; align-items:center; justify-content:center">
+      <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 19H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v4"></path><path d="M4 7l8 6 8-6"></path><path d="M19 15v6M16 18h6"></path></svg>
+    </button>
+  </div>
 </header>
 
-<nav aria-label="Links" style="width: 100%; display: flex; flex-direction: column; gap: 28px">
-<section aria-labelledby="sec-personal" style="width: 100%; display: flex; flex-direction: column; gap: 8px">
-<h2 id="sec-personal" style="margin: 0; padding: 0 16px; font-size: 13px; font-weight: 400; letter-spacing: 0.02em; text-transform: uppercase; color: var(--label)">Personal</h2>
-<div class="grp plain" style="border-radius: 18px; overflow: hidden; background: var(--card); box-shadow: var(--shadow)">
-<a class="row" href="https://www.facebook.com/profile.php?id=61576469944151" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 14px; min-height: 54px; padding-left: 16px; box-sizing: border-box; color: var(--text); text-decoration: none">
-<span style="width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; background: var(--tile); display: flex; align-items: center; justify-content: center">
-<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"></path></svg>
-</span>
-<span class="rt" style="flex: 1; align-self: stretch; display: flex; align-items: center; gap: 8px; padding-right: 14px">
-<span style="flex: 1; font-size: 17px; line-height: 1.3; font-weight: 400; letter-spacing: -0.01em">Facebook</span>
-<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--chev); flex-shrink: 0"><path d="M9 6l6 6-6 6"></path></svg>
-</span>
-</a>
-<a class="row" href="https://www.instagram.com/miqbal.ag/" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 14px; min-height: 54px; padding-left: 16px; box-sizing: border-box; color: var(--text); text-decoration: none">
-<span style="width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; background: var(--tile); display: flex; align-items: center; justify-content: center">
-<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
-</span>
-<span class="rt" style="flex: 1; align-self: stretch; display: flex; align-items: center; gap: 8px; padding-right: 14px">
-<span style="flex: 1; font-size: 17px; line-height: 1.3; font-weight: 400; letter-spacing: -0.01em">Instagram</span>
-<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--chev); flex-shrink: 0"><path d="M9 6l6 6-6 6"></path></svg>
-</span>
-</a>
-<a class="row" href="https://www.threads.com/@miqbal.ag" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 14px; min-height: 54px; padding-left: 16px; box-sizing: border-box; color: var(--text); text-decoration: none">
-<span style="width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; background: var(--tile); display: flex; align-items: center; justify-content: center">
-<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"></path></svg>
-</span>
-<span class="rt" style="flex: 1; align-self: stretch; display: flex; align-items: center; gap: 8px; padding-right: 14px">
-<span style="flex: 1; font-size: 17px; line-height: 1.3; font-weight: 400; letter-spacing: -0.01em">Threads</span>
-<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--chev); flex-shrink: 0"><path d="M9 6l6 6-6 6"></path></svg>
-</span>
-</a>
-</div>
+<nav aria-label="Links" style="width:100%; display:flex; flex-direction:column; gap:28px">
+<section data-reveal style="--d:.18s; width:100%; display:flex; flex-direction:column; gap:8px" aria-labelledby="sec-personal">
+  <h2 id="sec-personal" style="margin:0; padding:0 16px; font-size:13px; font-weight:400; letter-spacing:0.02em; text-transform:uppercase; color:var(--label)">Personal</h2>
+  <div class="grp plain tilt" style="border-radius:18px; overflow:hidden; background:var(--card); box-shadow:var(--shadow)">
+    <a class="row" href="https://www.facebook.com/profile.php?id=61576469944151" target="_blank" rel="noopener" style="display:flex; align-items:center; gap:14px; min-height:54px; padding-left:16px; box-sizing:border-box; color:var(--text); text-decoration:none">
+      <span class="tile" style="width:30px; height:30px; flex-shrink:0; border-radius:8px; background:var(--tile); display:flex; align-items:center; justify-content:center">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"></path></svg>
+      </span>
+      <span class="rt" style="flex:1; align-self:stretch; display:flex; align-items:center; gap:8px; padding-right:14px">
+        <span style="flex:1; font-size:17px; line-height:1.3; font-weight:400; letter-spacing:-0.01em">Facebook</span>
+        <svg class="chev" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--chev); flex-shrink:0"><path d="M9 6l6 6-6 6"></path></svg>
+      </span>
+    </a>
+    <a class="row" href="https://www.instagram.com/miqbal.ag/" target="_blank" rel="noopener" style="display:flex; align-items:center; gap:14px; min-height:54px; padding-left:16px; box-sizing:border-box; color:var(--text); text-decoration:none">
+      <span class="tile" style="width:30px; height:30px; flex-shrink:0; border-radius:8px; background:var(--tile); display:flex; align-items:center; justify-content:center">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
+      </span>
+      <span class="rt" style="flex:1; align-self:stretch; display:flex; align-items:center; gap:8px; padding-right:14px">
+        <span style="flex:1; font-size:17px; line-height:1.3; font-weight:400; letter-spacing:-0.01em">Instagram</span>
+        <svg class="chev" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--chev); flex-shrink:0"><path d="M9 6l6 6-6 6"></path></svg>
+      </span>
+    </a>
+    <a class="row" href="https://www.threads.com/@miqbal.ag" target="_blank" rel="noopener" style="display:flex; align-items:center; gap:14px; min-height:54px; padding-left:16px; box-sizing:border-box; color:var(--text); text-decoration:none">
+      <span class="tile" style="width:30px; height:30px; flex-shrink:0; border-radius:8px; background:var(--tile); display:flex; align-items:center; justify-content:center">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"></path></svg>
+      </span>
+      <span class="rt" style="flex:1; align-self:stretch; display:flex; align-items:center; gap:8px; padding-right:14px">
+        <span style="flex:1; font-size:17px; line-height:1.3; font-weight:400; letter-spacing:-0.01em">Threads</span>
+        <svg class="chev" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--chev); flex-shrink:0"><path d="M9 6l6 6-6 6"></path></svg>
+      </span>
+    </a>
+  </div>
 </section>
 
-<section aria-labelledby="sec-pro" style="width: 100%; display: flex; flex-direction: column; gap: 8px">
-<h2 id="sec-pro" style="margin: 0; padding: 0 16px; font-size: 13px; font-weight: 400; letter-spacing: 0.02em; text-transform: uppercase; color: var(--label)">Professional</h2>
-<div class="grp plain" style="border-radius: 18px; overflow: hidden; background: var(--card); box-shadow: var(--shadow)">
-<a class="row" href="https://drmiqbal.pages.dev/" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 14px; min-height: 54px; padding-left: 16px; box-sizing: border-box; color: var(--text); text-decoration: none">
-<span style="width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; background: var(--tile); display: flex; align-items: center; justify-content: center">
-<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="11" r="2"></circle><path d="M6 16a3 3 0 0 1 6 0M15 10h3M15 14h3"></path></svg>
-</span>
-<span class="rt" style="flex: 1; align-self: stretch; display: flex; align-items: center; gap: 8px; padding-right: 14px">
-<span style="flex: 1; font-size: 17px; line-height: 1.3; font-weight: 400; letter-spacing: -0.01em">CV</span>
-<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--chev); flex-shrink: 0"><path d="M9 6l6 6-6 6"></path></svg>
-</span>
-</a>
-<a class="row" href="https://www.linkedin.com/in/miqbal02" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 14px; min-height: 54px; padding-left: 16px; box-sizing: border-box; color: var(--text); text-decoration: none">
-<span style="width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; background: var(--tile); display: flex; align-items: center; justify-content: center">
-<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"></rect><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"></path></svg>
-</span>
-<span class="rt" style="flex: 1; align-self: stretch; display: flex; align-items: center; gap: 8px; padding-right: 14px">
-<span style="flex: 1; font-size: 17px; line-height: 1.3; font-weight: 400; letter-spacing: -0.01em">LinkedIn</span>
-<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--chev); flex-shrink: 0"><path d="M9 6l6 6-6 6"></path></svg>
-</span>
-</a>
-<a class="row" href="https://silent1412.notion.site/Dr-M-Iqbal-41de3e0b2a4b8179a411d887246bb35d" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 14px; min-height: 54px; padding-left: 16px; box-sizing: border-box; color: var(--text); text-decoration: none">
-<span style="width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; background: var(--tile); display: flex; align-items: center; justify-content: center">
-<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M9 13h6M9 17h6"></path></svg>
-</span>
-<span class="rt" style="flex: 1; align-self: stretch; display: flex; align-items: center; gap: 8px; padding-right: 14px">
-<span style="flex: 1; font-size: 17px; line-height: 1.3; font-weight: 400; letter-spacing: -0.01em">Notion</span>
-<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--chev); flex-shrink: 0"><path d="M9 6l6 6-6 6"></path></svg>
-</span>
-</a>
-<a class="row" href="https://www.facebook.com/profile.php?id=61576529769682" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 14px; min-height: 54px; padding-left: 16px; box-sizing: border-box; color: var(--text); text-decoration: none">
-<span style="width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; background: var(--tile); display: flex; align-items: center; justify-content: center">
-<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"></path></svg>
-</span>
-<span class="rt" style="flex: 1; align-self: stretch; display: flex; align-items: center; gap: 8px; padding-right: 14px">
-<span style="flex: 1; font-size: 17px; line-height: 1.3; font-weight: 400; letter-spacing: -0.01em">Facebook Page</span>
-<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--chev); flex-shrink: 0"><path d="M9 6l6 6-6 6"></path></svg>
-</span>
-</a>
-</div>
+<section data-reveal style="--d:.32s; width:100%; display:flex; flex-direction:column; gap:8px" aria-labelledby="sec-pro">
+  <h2 id="sec-pro" style="margin:0; padding:0 16px; font-size:13px; font-weight:400; letter-spacing:0.02em; text-transform:uppercase; color:var(--label)">Professional</h2>
+  <div class="grp plain tilt" style="border-radius:18px; overflow:hidden; background:var(--card); box-shadow:var(--shadow)">
+    <a class="row" href="https://drmiqbal.pages.dev/" target="_blank" rel="noopener" style="display:flex; align-items:center; gap:14px; min-height:54px; padding-left:16px; box-sizing:border-box; color:var(--text); text-decoration:none">
+      <span class="tile" style="width:30px; height:30px; flex-shrink:0; border-radius:8px; background:var(--tile); display:flex; align-items:center; justify-content:center">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="11" r="2"></circle><path d="M6 16a3 3 0 0 1 6 0M15 10h3M15 14h3"></path></svg>
+      </span>
+      <span class="rt" style="flex:1; align-self:stretch; display:flex; align-items:center; gap:8px; padding-right:14px">
+        <span style="flex:1; font-size:17px; line-height:1.3; font-weight:400; letter-spacing:-0.01em">CV</span>
+        <svg class="chev" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--chev); flex-shrink:0"><path d="M9 6l6 6-6 6"></path></svg>
+      </span>
+    </a>
+    <a class="row" href="https://www.linkedin.com/in/miqbal02" target="_blank" rel="noopener" style="display:flex; align-items:center; gap:14px; min-height:54px; padding-left:16px; box-sizing:border-box; color:var(--text); text-decoration:none">
+      <span class="tile" style="width:30px; height:30px; flex-shrink:0; border-radius:8px; background:var(--tile); display:flex; align-items:center; justify-content:center">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"></rect><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"></path></svg>
+      </span>
+      <span class="rt" style="flex:1; align-self:stretch; display:flex; align-items:center; gap:8px; padding-right:14px">
+        <span style="flex:1; font-size:17px; line-height:1.3; font-weight:400; letter-spacing:-0.01em">LinkedIn</span>
+        <svg class="chev" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--chev); flex-shrink:0"><path d="M9 6l6 6-6 6"></path></svg>
+      </span>
+    </a>
+    <a class="row" href="https://silent1412.notion.site/Dr-M-Iqbal-41de3e0b2a4b8179a411d887246bb35d" target="_blank" rel="noopener" style="display:flex; align-items:center; gap:14px; min-height:54px; padding-left:16px; box-sizing:border-box; color:var(--text); text-decoration:none">
+      <span class="tile" style="width:30px; height:30px; flex-shrink:0; border-radius:8px; background:var(--tile); display:flex; align-items:center; justify-content:center">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M9 13h6M9 17h6"></path></svg>
+      </span>
+      <span class="rt" style="flex:1; align-self:stretch; display:flex; align-items:center; gap:8px; padding-right:14px">
+        <span style="flex:1; font-size:17px; line-height:1.3; font-weight:400; letter-spacing:-0.01em">Notion</span>
+        <svg class="chev" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--chev); flex-shrink:0"><path d="M9 6l6 6-6 6"></path></svg>
+      </span>
+    </a>
+    <a class="row" href="https://www.facebook.com/profile.php?id=61576529769682" target="_blank" rel="noopener" style="display:flex; align-items:center; gap:14px; min-height:54px; padding-left:16px; box-sizing:border-box; color:var(--text); text-decoration:none">
+      <span class="tile" style="width:30px; height:30px; flex-shrink:0; border-radius:8px; background:var(--tile); display:flex; align-items:center; justify-content:center">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"></path></svg>
+      </span>
+      <span class="rt" style="flex:1; align-self:stretch; display:flex; align-items:center; gap:8px; padding-right:14px">
+        <span style="flex:1; font-size:17px; line-height:1.3; font-weight:400; letter-spacing:-0.01em">Facebook Page</span>
+        <svg class="chev" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--chev); flex-shrink:0"><path d="M9 6l6 6-6 6"></path></svg>
+      </span>
+    </a>
+  </div>
 </section>
 
-<section aria-labelledby="sec-services" style="width: 100%; display: flex; flex-direction: column; gap: 8px">
-<h2 id="sec-services" style="margin: 0; padding: 0 16px; font-size: 13px; font-weight: 400; letter-spacing: 0.02em; text-transform: uppercase; color: var(--label)">Services</h2>
-<div class="grp accent" style="border-radius: 18px; overflow: hidden; background: #1570B8; box-shadow: 0 6px 20px rgba(21,112,184,0.25)">
-<a class="row" href="https://iq-anaesthesia-hub.pages.dev/" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 14px; min-height: 54px; padding-left: 16px; box-sizing: border-box; color: #FFFFFF; text-decoration: none">
-<span style="width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; background: rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center">
-<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v6a4 4 0 0 0 8 0V3"></path><path d="M10 13v2a5 5 0 0 0 10 0v-2"></path><circle cx="20" cy="11" r="2"></circle></svg>
-</span>
-<span class="rt" style="flex: 1; align-self: stretch; display: flex; align-items: center; gap: 8px; padding-right: 14px">
-<span style="flex: 1; font-size: 17px; line-height: 1.3; font-weight: 600; letter-spacing: -0.01em">IQ Anaesthesia Hub</span>
-<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: rgba(255,255,255,0.75); flex-shrink: 0"><path d="M9 6l6 6-6 6"></path></svg>
-</span>
-</a>
-<a class="row" href="https://iqlifesolution.pages.dev/" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 14px; min-height: 54px; padding-left: 16px; box-sizing: border-box; color: #FFFFFF; text-decoration: none">
-<span style="width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; background: rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center">
-<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"></path></svg>
-</span>
-<span class="rt" style="flex: 1; align-self: stretch; display: flex; align-items: center; gap: 8px; padding-right: 14px">
-<span style="flex: 1; font-size: 17px; line-height: 1.3; font-weight: 600; letter-spacing: -0.01em">IQ Life Solution</span>
-<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: rgba(255,255,255,0.75); flex-shrink: 0"><path d="M9 6l6 6-6 6"></path></svg>
-</span>
-</a>
-</div>
+<section data-reveal style="--d:.46s; width:100%; display:flex; flex-direction:column; gap:8px" aria-labelledby="sec-services">
+  <h2 id="sec-services" style="margin:0; padding:0 16px; font-size:13px; font-weight:400; letter-spacing:0.02em; text-transform:uppercase; color:var(--label)">Services</h2>
+  <div class="grp accent tilt" style="border-radius:18px; overflow:hidden">
+    <a class="row" href="https://iq-anaesthesia-hub.pages.dev/" target="_blank" rel="noopener" style="display:flex; align-items:center; gap:14px; min-height:54px; padding-left:16px; box-sizing:border-box; color:#FFFFFF; text-decoration:none">
+      <span class="tile" style="width:30px; height:30px; flex-shrink:0; border-radius:8px; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v6a4 4 0 0 0 8 0V3"></path><path d="M10 13v2a5 5 0 0 0 10 0v-2"></path><circle cx="20" cy="11" r="2"></circle></svg>
+      </span>
+      <span class="rt" style="flex:1; align-self:stretch; display:flex; align-items:center; gap:8px; padding-right:14px">
+        <span style="flex:1; font-size:17px; line-height:1.3; font-weight:600; letter-spacing:-0.01em">IQ Anaesthesia Hub</span>
+        <svg class="chev" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:rgba(255,255,255,0.8); flex-shrink:0"><path d="M9 6l6 6-6 6"></path></svg>
+      </span>
+    </a>
+    <a class="row" href="https://iqlifesolution.pages.dev/" target="_blank" rel="noopener" style="display:flex; align-items:center; gap:14px; min-height:54px; padding-left:16px; box-sizing:border-box; color:#FFFFFF; text-decoration:none">
+      <span class="tile" style="width:30px; height:30px; flex-shrink:0; border-radius:8px; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"></path></svg>
+      </span>
+      <span class="rt" style="flex:1; align-self:stretch; display:flex; align-items:center; gap:8px; padding-right:14px">
+        <span style="flex:1; font-size:17px; line-height:1.3; font-weight:600; letter-spacing:-0.01em">IQ Life Solution</span>
+        <svg class="chev" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:rgba(255,255,255,0.8); flex-shrink:0"><path d="M9 6l6 6-6 6"></path></svg>
+      </span>
+    </a>
+  </div>
 </section>
 </nav>
 
-<footer style="margin-top: 8px; font-size: 12px; color: var(--label); text-align: center">© 2026 Dr M Iqbal A Ghani</footer>
+<footer data-reveal style="--d:.58s; margin-top:8px; font-size:12px; color:var(--label); text-align:center">© 2026 Dr M Iqbal A Ghani</footer>
 
 </div>
 </main>
+
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+  <span id="toast-text">Copied</span>
+</div>
+
 <script>
 (function () {
   var root = document.documentElement;
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- entrance ---------- */
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ document.body.classList.add('ready'); }); });
+
+  /* ---------- theme ---------- */
   var btn = document.getElementById('theme-toggle');
   var meta = document.querySelector('meta[name="theme-color"]');
   function apply(t) {
@@ -197,6 +388,93 @@ nav{gap:24px !important}
     var t = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     apply(t);
     try { localStorage.setItem('theme', t); } catch (e) {}
+    buzz();
+  });
+
+  /* ---------- haptic ---------- */
+  function buzz(){ try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) {} }
+
+  /* ---------- toast ---------- */
+  var toast = document.getElementById('toast');
+  var toastText = document.getElementById('toast-text');
+  var toastTimer = null;
+  function showToast(msg) {
+    toastText.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toast.classList.remove('show'); }, 2200);
+  }
+
+  /* ---------- clipboard ---------- */
+  function copy(text, done) {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, function(){ legacy(text, done); });
+    } else { legacy(text, done); }
+  }
+  function legacy(text, done) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  /* ---------- copy email buttons ---------- */
+  document.querySelectorAll('.copy-mail').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var mail = b.getAttribute('data-mail');
+      copy(mail, function(){ showToast('Email copied — ' + mail); });
+      buzz();
+    });
+  });
+
+  /* ---------- share ---------- */
+  document.getElementById('share-btn').addEventListener('click', function () {
+    var data = { title: document.title, text: 'Dr M Iqbal A Ghani — links', url: location.href };
+    if (navigator.share) {
+      navigator.share(data).catch(function(){});
+    } else {
+      copy(location.href, function(){ showToast('Link copied to clipboard'); });
+    }
+    buzz();
+  });
+
+  /* ---------- live KL clock ---------- */
+  var clockEl = document.getElementById('clock');
+  function tick() {
+    try {
+      var t = new Date().toLocaleTimeString('en-MY', { timeZone: 'Asia/Kuala_Lumpur', hour: '2-digit', minute: '2-digit', hour12: true });
+      clockEl.textContent = 'Kuala Lumpur · ' + t;
+    } catch (e) { document.getElementById('clock-chip').style.display = 'none'; }
+  }
+  tick(); setInterval(tick, 15000);
+
+  /* ---------- 3D tilt + spotlight (fine pointers only) ---------- */
+  var fine = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if (fine && !reduceMotion) {
+    document.querySelectorAll('.tilt').forEach(function (card) {
+      var raf = null;
+      card.addEventListener('pointermove', function (e) {
+        if (raf) return;
+        raf = requestAnimationFrame(function () {
+          raf = null;
+          var r = card.getBoundingClientRect();
+          var px = (e.clientX - r.left) / r.width;
+          var py = (e.clientY - r.top) / r.height;
+          card.style.setProperty('--mx', (px * 100) + '%');
+          card.style.setProperty('--my', (py * 100) + '%');
+          card.style.transform = 'perspective(900px) rotateX(' + ((0.5 - py) * 2.4) + 'deg) rotateY(' + ((px - 0.5) * 2.4) + 'deg)';
+        });
+      });
+      card.addEventListener('pointerleave', function () {
+        card.style.transform = '';
+      });
+    });
+  }
+
+  /* ---------- row press haptic ---------- */
+  document.querySelectorAll('.row').forEach(function (r) {
+    r.addEventListener('pointerdown', buzz);
   });
 })();
 </script>
